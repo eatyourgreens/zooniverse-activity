@@ -1,20 +1,7 @@
 async function loadProjects() {
   let response = await fetch('https://notifications.zooniverse.org/presence');
   const counts = await response.json();
-  const projectIDs = counts.map(({ channel }) => channel.replace('project-', ''));
-  const query = `/projects?cards=true&id=${projectIDs}&page_size=${projectIDs.length}`;
-  response = await fetch(`https://www.zooniverse.org/api${query}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/vnd.api+json; version=1'
-    }
-  });
-  const projectData = await response.json();
-  return {
-    counts,
-    projectCards: projectData.projects
-  };
+  return counts;
 }
 
 function appendCard(project) {
@@ -29,20 +16,37 @@ function appendCard(project) {
   document.body.insertAdjacentHTML('beforeEnd', projectTile);
 }
 
-function showCount(count) {
+async function buildProjectTile({ channel, count }) {
+  const projectID = channel.replace('project-', '');
+  const query = `/projects?cards=true&id=${projectID}`;
+  const response = await fetch(`https://www.zooniverse.org/api${query}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/vnd.api+json; version=1'
+    }
+  });
+  if (response.ok) {
+    const body = await response.json();
+    const [ project ] = body.projects;
+    appendCard(project);
+    showCount({ channel, count });
+  }
+}
+
+function showCount({ channel, count }) {
   try {
-    const tile = document.querySelector(`#${count.channel} .count`);
-    tile.innerText = count.count
+    const tile = document.querySelector(`#${channel} .count`);
+    tile.innerText = count;
   } catch (e) {
-    console.log({ count })
-    console.error(e)
+    console.log({ channel, count });
+    console.error(e);
   }
 }
 
 async function buildPage() {
-  const { counts, projectCards } = await loadProjects();
-  projectCards.forEach(appendCard);
-  counts.forEach(showCount)
+  const counts  = await loadProjects();
+  counts.forEach(buildProjectTile);
 }
 
 buildPage();
