@@ -19,7 +19,7 @@ async function loadProjects() {
 
 function appendCard(project) {
   const projectTile = `
-  <div id="project-${project.id}" class="project title">
+  <div id="project-${project.id}" class="project tile">
     <img width=100 height=100 class="avatar" alt="${project.display_name}" src="${project.avatar_src}" />
     <span class="count">loading</span>
   </div>
