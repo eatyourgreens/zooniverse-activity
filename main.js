@@ -47,6 +47,12 @@ function showCount({ channel, count }) {
 async function buildPage() {
   const counts  = await loadProjects();
   counts.forEach(buildProjectTile);
+  let total = 0;
+  counts.forEach(({ channel, count }) => {
+    total = total + count;
+  })
+  const countHTML = `<p>There are ${total} active volunteer sessions.</p>`;
+  document.body.insertAdjacentHTML('beforeBegin', countHTML);
 }
 
 buildPage();
