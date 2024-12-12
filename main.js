@@ -1,3 +1,5 @@
+const projects = document.getElementById('projects');
+
 async function loadProjects() {
   let response = await fetch('https://notifications.zooniverse.org/presence');
   const counts = await response.json();
@@ -13,7 +15,7 @@ function appendCard(project) {
     </a>
   </div>
   `;
-  document.body.insertAdjacentHTML('beforeEnd', projectTile);
+  projects.insertAdjacentHTML('beforeEnd', projectTile);
 }
 
 async function buildProjectTile({ channel, count }) {
@@ -52,7 +54,7 @@ async function buildPage() {
     total = total + count;
   })
   const countHTML = `<p>There are ${total} active volunteer sessions.</p>`;
-  document.body.insertAdjacentHTML('beforeBegin', countHTML);
+  projects.insertAdjacentHTML('afterBegin', countHTML);
 }
 
 buildPage();
