@@ -1,7 +1,46 @@
-const projects = document.getElementById('projects');
+const projects = document.getElementById("projects");
+
+const MAX_TRIES = 5;
+const DELAY = 5000;
+
+function fetchWithDelay(url, options, delay = DELAY) {
+  return new Promise(function (resolve, reject) {
+    setTimeout(async function () {
+      try {
+        const response = await fetch(url, options);
+        if (response.ok) {
+          resolve(response);
+        } else {
+          if (response.status !== 404) {
+            const error = new Error(`HTTP error: ${response.status}`);
+            reject(error);
+          }
+          resolve(response);
+        }
+      } catch (error) {
+        reject(error);
+      }
+    }, delay);
+  });
+}
+
+async function fetchWithRetry(url, options = {}, retryCount = 0, delay = 0) {
+  try {
+    if (retryCount > 0) {
+      console.log(`retrying ${url}}, attempt: ${retryCount}`);
+    }
+    const response = await fetchWithDelay(url, options, delay);
+    return response;
+  } catch (error) {
+    if (retryCount < MAX_TRIES) {
+      return fetchWithRetry(url, options, retryCount + 1, DELAY);
+    }
+    throw error;
+  }
+}
 
 async function loadProjects() {
-  let response = await fetch('https://notifications.zooniverse.org/presence');
+  let response = await fetchWithRetry("https://notifications.zooniverse.org/presence");
   const counts = await response.json();
   return counts;
 }
@@ -15,22 +54,22 @@ function appendCard(project) {
     </a>
   </div>
   `;
-  projects.insertAdjacentHTML('beforeEnd', projectTile);
+  projects.insertAdjacentHTML("beforeEnd", projectTile);
 }
 
 async function buildProjectTile({ channel, count }) {
-  const projectID = channel.replace('project-', '');
+  const projectID = channel.replace("project-", "");
   const query = `/projects?cards=true&id=${projectID}`;
-  const response = await fetch(`https://www.zooniverse.org/api${query}`, {
-    method: 'GET',
+  const response = await fetchWithRetry(`https://www.zooniverse.org/api${query}`, {
+    method: "GET",
     headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/vnd.api+json; version=1'
-    }
+      "Content-Type": "application/json",
+      Accept: "application/vnd.api+json; version=1",
+    },
   });
   if (response.ok) {
     const body = await response.json();
-    const [ project ] = body.projects;
+    const [project] = body.projects;
     appendCard(project);
     showCount({ channel, count });
   }
@@ -47,14 +86,14 @@ function showCount({ channel, count }) {
 }
 
 async function buildPage() {
-  const counts  = await loadProjects();
+  const counts = await loadProjects();
   counts.forEach(buildProjectTile);
   let total = 0;
   counts.forEach(({ channel, count }) => {
     total = total + count;
-  })
+  });
   const countHTML = `<p>There are ${total} active volunteer sessions.</p>`;
-  projects.insertAdjacentHTML('afterBegin', countHTML);
+  projects.insertAdjacentHTML("afterBegin", countHTML);
 }
 
 buildPage();
