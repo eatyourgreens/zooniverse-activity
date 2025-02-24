@@ -59,10 +59,10 @@ async function buildProjectTile({ channel, count }) {
   const projectID = channel.replace("project-", "");
   const query = `/projects?cards=true&id=${projectID}`;
   const projectTile = `
-    <div id="${channel}" class="project tile">
-    </div>
+    <li id="${channel}" class="project tile">
+    </li>
   `;
-  projects.insertAdjacentHTML("beforeEnd", projectTile);
+  projects.querySelector('ul').insertAdjacentHTML("beforeEnd", projectTile);
   const response = await fetchWithRetry(`https://www.zooniverse.org/api${query}`, {
     method: "GET",
     headers: {
@@ -93,6 +93,7 @@ function showCount({ channel, count }) {
 }
 
 async function buildPage() {
+  projects.innerHTML = "<ul role='list'></ul>";
   const counts = await loadProjects();
   counts
     .sort((a, b) => b.count - a.count)
