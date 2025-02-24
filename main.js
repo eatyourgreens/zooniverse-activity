@@ -45,21 +45,24 @@ async function loadProjects() {
   return counts;
 }
 
-function appendCard(project) {
+function appendCard(project, channel) {
   const projectTile = `
-  <div id="project-${project.id}" class="project tile">
     <a href="https://www.zooniverse.org/projects/${project.slug}">
       <img width=100 height=100 class="avatar" alt="${project.display_name}" src="${project.avatar_src}" />
       <span class="count">loading</span>
     </a>
-  </div>
   `;
-  projects.insertAdjacentHTML("beforeEnd", projectTile);
+  document.getElementById(channel).innerHTML = projectTile;
 }
 
 async function buildProjectTile({ channel, count }) {
   const projectID = channel.replace("project-", "");
   const query = `/projects?cards=true&id=${projectID}`;
+  const projectTile = `
+    <div id="${channel}" class="project tile">
+    </div>
+  `;
+  projects.insertAdjacentHTML("beforeEnd", projectTile);
   const response = await fetchWithRetry(`https://www.zooniverse.org/api${query}`, {
     method: "GET",
     headers: {
@@ -70,8 +73,12 @@ async function buildProjectTile({ channel, count }) {
   if (response.ok) {
     const body = await response.json();
     const [project] = body.projects;
-    appendCard(project);
+    appendCard(project, channel);
     showCount({ channel, count });
+  }
+  if (response.status === 404) {
+    const projectTile = document.getElementById(channel);
+    projectTile.parentNode.removeChild(projectTile);
   }
 }
 
@@ -87,7 +94,9 @@ function showCount({ channel, count }) {
 
 async function buildPage() {
   const counts = await loadProjects();
-  counts.forEach(buildProjectTile);
+  counts
+    .sort((a, b) => b.count - a.count)
+    .forEach(buildProjectTile);
   let total = 0;
   counts.forEach(({ channel, count }) => {
     total = total + count;
